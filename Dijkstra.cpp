@@ -19,10 +19,10 @@ int main() {
 
     int k;  // how many destinations to report
     fin >> k;
+
     vector<int> targets(k);
     for (int i = 0; i < k; ++i) fin >> targets[i];
 
-    // Undirected graph by default (roads are two-way)
     vector<vector<Edge>> g(n + 1);
     for (int i = 0; i < m; ++i) {
         int u, v, w;
@@ -38,21 +38,25 @@ int main() {
     dist[s] = 0;
     parent[s] = s;
 
-    for(int iter = 0; iter < n; ++iter){
-        int u = -1, best = INF;
-        for(int v = 1; v <= n; ++v){
-           if(!used[v] && dist[v] < best){
-                best = dist[v];
-                u = v;
-            }
-        }
-        if (u == -1)
-            break;
-        used[u] = 1;
+    using P = pair<int,int>;  //(dist, node)
+    priority_queue<P, vector<P>, greater<P>> pq;
+
+    pq.push({0, s});
+    dist[s] = 0;
+    parent[s] = s;
+
+    while (!pq.empty()) {
+        auto [d, u] = pq.top();
+        pq.pop();
+
+        if (d != dist[u])
+            continue;
+
         for (const auto& e : g[u]) {
-            if (!used[e.to] && dist[u] + e.w < dist[e.to]) {
+            if (dist[u] + e.w < dist[e.to]) {
                 dist[e.to] = dist[u] + e.w;
                 parent[e.to] = u;
+                pq.push({dist[e.to], e.to});
             }
         }
     }
@@ -81,5 +85,36 @@ int main() {
         }
         cout << endl;
     }
+
+    int bestNode = -1, bestDist = INF;
+    for (int t : targets) {
+        if (dist[t] < bestDist) {
+            bestDist = dist[t];
+            bestNode = t;
+        }
+    }
+
+    cout << "\nMost likely destination: ";
+    if (bestNode == -1) {
+        cout << "None reachable from source " << s << endl;
+    }
+    else {
+        cout << bestNode << "  (distance = " << bestDist << ")" << endl;
+
+        cout << "Path: ";
+        vector<int> path;
+        for (int cur = bestNode; cur != parent[cur]; cur = parent[cur])
+            path.push_back(cur);
+        path.push_back(s);
+        reverse(path.begin(), path.end());
+
+        for (size_t i = 0; i < path.size(); ++i) {
+            if (i) cout << " -> ";
+            cout << path[i];
+        }
+        cout << endl;
+    }
+
+
     return 0;
 }
